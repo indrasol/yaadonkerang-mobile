@@ -8,19 +8,16 @@ import {
   Image,
   Alert,
   ScrollView,
-  Share,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { signOut } from "@/services/supabaseClient";
-import { Heart, Users, LogOut } from "lucide-react-native";
+import Header from "@/components/Header";
+import { Heart, Users } from "lucide-react-native";
 import { StatsAPI, StatsResponse } from "@/services/statsApi";
 // import { ColorizationAPI } from "@/services/colorizationApi";
 import { getErrorMessage, logError } from '@/utils/errorHandler';
-import { ColorizationAPI, EphemeralResponse } from "@/services/colorizationApiV1";
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
+import { ColorizationAPI } from "@/services/colorizationApiV1";
 
 export default function UploadScreen() {
   const router = useRouter();
@@ -30,8 +27,7 @@ export default function UploadScreen() {
     total_memories: 34,
     last_updated: new Date().toISOString(),
   });
-  const [colorizedImage, setColorizedImage] = useState<string | null>(null);
-  const [showComparison, setShowComparison] = useState(false);
+  
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -45,22 +41,6 @@ export default function UploadScreen() {
     fetchStats();
   }, []);
 
-  const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        onPress: async () => {
-          const { error } = await signOut();
-          if (error) {
-            Alert.alert("Error", "Failed to logout");
-          } else {
-            router.replace("/landing");
-          }
-        },
-      },
-    ]);
-  };
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -95,8 +75,6 @@ export default function UploadScreen() {
     }
 
     try {
-      Alert.alert('Uploading', 'Please wait while we upload your image...');
-
       // Extract file extension and mime type
       let fileType = 'image/jpeg';
       let fileName = `photo_${Date.now()}.jpg`;
@@ -104,7 +82,6 @@ export default function UploadScreen() {
       if (match && match[1]) {
         const ext = match[1].toLowerCase();
         fileName = `photo_${Date.now()}.${ext}`;
-        // Basic mime type mapping
         if (ext === 'png') fileType = 'image/png';
         else if (ext === 'jpg' || ext === 'jpeg') fileType = 'image/jpeg';
         else if (ext === 'gif') fileType = 'image/gif';
@@ -121,15 +98,15 @@ export default function UploadScreen() {
         type: fileType,
       };
 
-      const response = await ColorizationAPI.colorizeEphemeral(file);
-
-      // EphemeralResponse: { original_base64, colorized_base64, expires_in }
-      if (response && response.colorized_base64) {
-        setColorizedImage(response.colorized_base64);
-        setShowComparison(true);
-      } else {
-        Alert.alert('Error', 'Colorization failed. No image returned.');
+      // Start background job and get request id
+      const uploadResp = await ColorizationAPI.uploadImage(file as any);
+      if (!uploadResp?.request_id) {
+        Alert.alert('Upload Failed', 'Could not start colorization process.');
+        return;
       }
+
+      // Navigate to processing screen with the request id and original URL (if available)
+      router.push({ pathname: '/ProcessingScreen', params: { requestId: uploadResp.request_id, originalUrl: uploadResp.original_url || selectedImage } });
     } catch (error) {
       console.error('Upload error:', error);
       let errorMessage = 'Unknown error occurred';
@@ -149,98 +126,12 @@ export default function UploadScreen() {
   return (
     <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {showComparison ? (
-          <View style={styles.comparisonContainer}>
-            <View style={styles.comparisonImagesRow}>
-              <View style={styles.comparisonImageBlock}>
-                <Text style={styles.comparisonLabel}>Original</Text>
-                <Image
-                  source={{ uri: selectedImage! }}
-                  style={styles.comparisonImage}
-                  resizeMode="contain"
-                />
-              </View>
-              <View style={styles.comparisonImageBlock}>
-                <Text style={styles.comparisonLabel}>Colorized</Text>
-                <Image
-                  source={{ uri: `data:image/jpeg;base64,${colorizedImage}` }}
-                  style={styles.comparisonImage}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-            <View style={styles.comparisonActions}>
-              <Text style={styles.comparisonSuccessTitle}>Memory Successfully Revived!</Text>
-              <Text style={styles.comparisonSuccessSubtitle}>
-                Your black & white photo now bursts with life and color
-              </Text>
-              <View style={styles.comparisonButtonRow}>
-                <TouchableOpacity
-                  style={styles.comparisonButton}
-                  onPress={() => setShowComparison(false)}
-                >
-                  <Text style={styles.comparisonButtonText}>Revive Another Memory</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.comparisonButton}
-                  onPress={async () => {
-                    try {
-                      await Share.share({
-                        message: 'Check out my revived memory!',
-                        url: `data:image/jpeg;base64,${colorizedImage}`,
-                      });
-                    } catch (e) {
-                      Alert.alert('Error', 'Failed to share image.');
-                    }
-                  }}
-                >
-                  <Text style={styles.comparisonButtonText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.comparisonButton}
-                  onPress={async () => {
-                    try {
-                      // @ts-ignore
-                      const fileUri =
-                        (FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? '') +
-                        `colorized_${Date.now()}.jpg`;
-                      // @ts-ignore
-                      const encoding =
-                        (FileSystem.EncodingType && FileSystem.EncodingType.Base64) || 'base64';
-                      await FileSystem.writeAsStringAsync(fileUri, colorizedImage!, { encoding });
-                      const { status } = await MediaLibrary.requestPermissionsAsync();
-                      if (status !== 'granted') throw new Error('Permission denied');
-                      await MediaLibrary.saveToLibraryAsync(fileUri);
-                      Alert.alert('Downloaded', 'Image saved to your gallery.');
-                    } catch (e) {
-                      Alert.alert('Error', 'Failed to download image.');
-                    }
-                  }}
-                >
-                  <Text style={styles.comparisonButtonText}>Download</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ) : (
+        {
+          // Main upload UI (progress-only flow)
+        }
+        
           <>
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={styles.logoRow}>
-                <Image
-                  source={require("../assets/images/favicon1.png")}
-                  style={styles.logoImage}
-                />
-                <Text style={styles.logoText}>
-                  YaadonKe<Text style={styles.logoAccent}>Rang</Text>
-                </Text>
-                <Text style={styles.subLogo}>by Indrasol</Text>
-              </View>
-              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <LogOut size={18} color="black" style={{ marginRight: 6 }} />
-                <Text style={styles.logoutText}>Logout</Text>
-              </TouchableOpacity>
-            </View>
+            <Header />
 
             {/* Subtitle */}
             <Text style={styles.subtitle}>
@@ -320,7 +211,7 @@ export default function UploadScreen() {
               </Text>
             </View>
           </>
-        )}
+        
       </ScrollView>
     </LinearGradient>
   );
@@ -335,28 +226,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  header: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
-  },
-  logoRow: { flexDirection: "row", alignItems: "center" },
-  logoImage: { width: 30, height: 30, marginRight: 8 },
-  logoText: { fontSize: 20, fontWeight: "bold", color: "#000" },
-  logoAccent: { color: "#DC2626" },
-  subLogo: { fontSize: 14, color: "#555", marginLeft: 6 },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-  logoutText: { color: "black", fontWeight: "600", fontSize: 14 },
   subtitle: { fontSize: 16, color: "black", textAlign: "center", marginBottom: 20, lineHeight: 22 },
   mobileStats: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingHorizontal: 20, paddingBottom: 30, gap: 30 },
   statItem: { alignItems: "center" },
@@ -377,88 +246,4 @@ const styles = StyleSheet.create({
   footerDivider: { width: "100%", height: 1, backgroundColor: "white", marginVertical: 10, alignSelf: "center", marginTop: 70 },
   footerTop: { fontSize: 14, color: "#b91c1c", textAlign: "center", marginTop: 20, marginBottom: 6 },
   footerBottom: { fontSize: 12, color: "black", textAlign: "center", marginBottom: 20 },
-  comparisonContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    paddingVertical: 30,
-  },
-  comparisonImagesRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    width: '100%',
-    marginBottom: 24,
-    gap: 16,
-  },
-  comparisonImageBlock: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  comparisonLabel: {
-    backgroundColor: '#222',
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignSelf: 'center',
-  },
-  comparisonImage: {
-    width: 160,
-    height: 220,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#fff',
-    backgroundColor: '#eee',
-  },
-  comparisonActions: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  comparisonSuccessTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#b91c1c',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  comparisonSuccessSubtitle: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  comparisonButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 10,
-    flexWrap: 'wrap',
-  },
-  comparisonButton: {
-    backgroundColor: '#feb47b',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    marginHorizontal: 4,
-    marginVertical: 4,
-  },
-  comparisonButtonText: {
-    color: '#000',
-    fontWeight: '600',
-    fontSize: 14,
-  },
 });

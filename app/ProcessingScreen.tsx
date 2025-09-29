@@ -1,12 +1,14 @@
 // screens/ProcessingScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, Image, StyleSheet, Alert, TouchableOpacity, Share } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ColorizationAPI } from '../services/colorizationApi';
-import { getErrorMessage, logError } from '@/utils/errorHandler';
+import Header from '@/components/Header';
+import { ColorizationAPI } from '@/services/colorizationApiV1';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function ProcessingScreen() {
-  const { requestId } = useLocalSearchParams<{ requestId: string }>();
+  const { requestId, originalUrl } = useLocalSearchParams<{ requestId: string; originalUrl?: string }>();
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [resultImage, setResultImage] = useState<string | null>(null);
@@ -18,86 +20,135 @@ export default function ProcessingScreen() {
       setError('No request ID provided');
       return;
     }
-  
-    const pollStatus = async () => {
-      try {
-        const data = await ColorizationAPI.checkStatus(requestId);
-        console.log('Status check:', data);
-  
-        if (data.status === 'processing') {
-          setProgress(data.progress || 0);
+
+    // Simulated progress that eases to 95% while processing
+    setProgress(0);
+    let isComplete = false;
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => {
+        if (isComplete) return 100;
+        const next = prev + Math.max(1, Math.round((95 - prev) * 0.07));
+        return Math.min(95, next);
+      });
+    }, 1000);
+
+    // Poll server for real completion using v1 API
+    ColorizationAPI.pollStatus(
+      String(requestId),
+      (update) => {
+        if (update.status === 'processing') {
           setStatus('processing');
-        } else if (data.status === 'done' && data.colorized_url) {
-          setResultImage(data.colorized_url);
-          setStatus('done');
-        } else if (data.status === 'error') {
-          setError(data.message || 'Processing failed');
-          setStatus('error');
         }
-      } catch (err) {
-        console.error('Status check error:', err);
-        
-        // Properly type the error
-        let errorMessage = 'Unknown error occurred';
-        
-        if (err instanceof Error) {
-          errorMessage = err.message;
-        } else if (typeof err === 'string') {
-          errorMessage = err;
+      },
+      (result) => {
+        isComplete = true;
+        setStatus('done');
+        setProgress(100);
+        if (result.colorized_url) {
+          setResultImage(result.colorized_url);
         }
-        
-        setError(errorMessage);
+        clearInterval(progressTimer);
+      },
+      (errMsg) => {
+        setError(errMsg || 'Processing failed');
         setStatus('error');
-      }
+        clearInterval(progressTimer);
+      },
+      1500,
+      120,
+      180000
+    );
+
+    return () => {
+      clearInterval(progressTimer);
     };
-  
-    // Poll immediately
-    pollStatus();
-  
-    // Set up interval for polling (every 3 seconds)
-    const interval = setInterval(pollStatus, 3000);
-  
-    return () => clearInterval(interval);
   }, [requestId]);
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorTitle}>Processing Error</Text>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
+      <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.page}>
+        <Header />
+        <View style={styles.container}>
+          <Text style={styles.errorTitle}>Processing Error</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
     );
   }
 
+  // Navigate to comparison screen when result is ready
+  useEffect(() => {
+    if (resultImage && originalUrl) {
+      router.replace({ pathname: '/ImageComparisonScreen', params: { original: String(originalUrl), colorized: resultImage } });
+    }
+  }, [resultImage, originalUrl, router]);
+
   if (resultImage) {
+    // Show loading state while navigation happens
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Colorization Complete! 🎉</Text>
-        <Image source={{ uri: resultImage }} style={styles.resultImage} />
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Colorize Another Photo</Text>
-        </TouchableOpacity>
-      </View>
+      <LinearGradient
+        colors={["#f97316", "#fb923c"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        <View style={styles.centerStack}>
+          <Text style={styles.loadingTitle}>Redirecting to Results...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#FF6B35" />
-      <Text style={styles.title}>Processing Your Image</Text>
-      <Text style={styles.progressText}>{progress}% Complete</Text>
-      <Text style={styles.noteText}>
-        This usually takes 1-2 minutes{'\n'}
-        Please keep the app open
-      </Text>
-    </View>
+    <LinearGradient
+      colors={["#f97316", "#fb923c"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradient}
+    >
+      <Header />
+      <View style={styles.centerStack}>
+        <View style={styles.loaderRing}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+        </View>
+        <Text style={styles.loadingTitle}>Colorization in Progress</Text>
+        <Text style={styles.loadingSubtitle}>
+          Please wait while we are bringing your memory back to life...
+        </Text>
+
+        <View style={styles.progressWrap}>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.max(0, Math.min(100, progress))}%` },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressLabel}>{progress}% complete</Text>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  page: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  centerStack: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingHorizontal: 20,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -113,11 +164,56 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
+  loadingTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  loadingSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20,
+  },
   progressText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
     marginTop: 10,
+  },
+  loaderRing: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  progressWrap: {
+    width: '100%',
+    marginTop: 18,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 10,
+    borderRadius: 6,
+    backgroundColor: '#FDE7C4',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#F97316',
+    borderRadius: 6,
+  },
+  progressLabel: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#fff',
   },
   noteText: {
     fontSize: 14,
@@ -131,6 +227,92 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 12,
     marginVertical: 20,
+  },
+  comparisonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingVertical: 30,
+    backgroundColor: '#f5f5f5',
+  },
+  comparisonImagesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    width: '100%',
+    marginBottom: 24,
+    gap: 16,
+    paddingHorizontal: 20,
+  },
+  comparisonImageBlock: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  comparisonLabel: {
+    backgroundColor: '#222',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 8,
+    alignSelf: 'center',
+  },
+  comparisonImage: {
+    width: 160,
+    height: 220,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#eee',
+  },
+  comparisonActions: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  comparisonSuccessTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#b91c1c',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  comparisonSuccessSubtitle: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  comparisonButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    flexWrap: 'wrap',
+  },
+  comparisonButton: {
+    backgroundColor: '#feb47b',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    marginVertical: 4,
+  },
+  comparisonButtonText: {
+    color: '#000',
+    fontWeight: '600',
+    fontSize: 14,
   },
   errorTitle: {
     fontSize: 18,

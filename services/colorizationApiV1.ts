@@ -50,7 +50,10 @@ export class ColorizationAPI {
         formData.append('user_email', user.email || '');
 
         const headers = await this.getAuthHeaders();
-
+        console.log('apiBaseUrl', apiBaseUrl);
+        console.log('Upload URL:', `${apiBaseUrl}/api/v1/colorize/upload`);
+        console.log('Headers:', headers);
+        
         const response = await fetch(`${apiBaseUrl}/api/v1/colorize/upload`, {
             method: 'POST',
             headers,
@@ -59,7 +62,7 @@ export class ColorizationAPI {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || `Upload failed: ${response.status}`);
+            throw new Error(errorData.detail || `Upload failed: ${response.status} - ${response.statusText}`);
         }
 
         return response.json();
