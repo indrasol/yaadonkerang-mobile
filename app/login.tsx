@@ -10,12 +10,19 @@ import {
   Platform,
   ScrollView,
   Image,
-  TextInputKeyPressEvent
+  TextInputKeyPressEvent,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { signInWithOTP, verifyOTP } from '@/services/supabaseClient';
 import GradientButton from '@/components/GradientButton';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -132,33 +139,25 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <LinearGradient
-        colors={['#ff7e5f', '#feb47b']}
-        style={styles.background}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#ff7e5f" />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.contentContainer}>
-            {/* Logo Section - Aligned to left as per image */}
-            <View style={styles.logoContainer}>
-              <Image 
-                source={require('../assets/images/favicon1.png')} 
-                style={styles.logoImage}
-              />
-              <View style={styles.logoTextContainer}>
-                <View style={styles.mainLogoRow}>
-                  <Text style={styles.logo}>
-                    YaadonKe<Text style={styles.logoAccent}>Rang</Text>
-                  </Text>
-                  <TouchableOpacity>
-                    <Text style={styles.subLogo}>by Indrasol</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+        <LinearGradient
+          colors={['#ff7e5f', '#feb47b']}
+          style={styles.background}
+        >
+          <ScrollView 
+            style={{ flex: 1 }} 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Header variant="none" />
+            <View style={styles.contentContainer}>
 
             {/* Subtitle - Centered */}
             <Text style={styles.subtitle}>
@@ -262,14 +261,48 @@ export default function LoginScreen() {
               <Text style={styles.footerBackText}>← Back to Home</Text>
             </TouchableOpacity>
           </View>
+          <Footer topText="Secure and easy authentication for your account." />
         </ScrollView>
       </LinearGradient>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+// Calculate responsive OTP input sizes
+const getOTPResponsiveSizes = () => {
+  if (width < 360) {
+    return {
+      fontSize: 16,
+      minHeight: 48,
+      padding: 12,
+      gap: 4,
+    };
+  } else if (width < 768) {
+    return {
+      fontSize: 18,
+      minHeight: 56,
+      padding: 14,
+      gap: 6,
+    };
+  } else {
+    return {
+      fontSize: 22,
+      minHeight: 64,
+      padding: 16,
+      gap: 8,
+    };
+  }
+};
+
+const otpSizes = getOTPResponsiveSizes();
+
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#ff7e5f',
+  },
+  keyboardView: {
     flex: 1,
   },
   background: {
@@ -277,13 +310,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 20,
   },
   contentContainer: {
-    flex: 1,
+    minHeight: '80%',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   logoContainer: {
@@ -388,20 +422,21 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: otpSizes.gap,
   },
   otpInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
-    padding: 16,
-    fontSize: 18,
+    padding: otpSizes.padding,
+    fontSize: otpSizes.fontSize,
     fontWeight: '600',
     color: '#333',
     backgroundColor: '#fafafa',
     textAlign: 'center',
-    minHeight: 60,
+    minHeight: otpSizes.minHeight,
+    aspectRatio: 1,
   },
   otpInputFilled: {
     borderColor: '#FF6B35',

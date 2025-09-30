@@ -7,10 +7,14 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Users, Heart, ArrowRight, Zap, Star, Shield, LogIn } from 'lucide-react-native';
+import { Users, Heart, ArrowRight, Zap, Star, Shield } from 'lucide-react-native';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { StatsAPI, StatsResponse } from '@/services/statsApi';
 
 const { width } = Dimensions.get('window');
@@ -95,38 +99,15 @@ export default function LandingScreen() {
   ];
 
   return (
-    <LinearGradient
-      colors={['#ff7e5f', '#feb47b']}
-      style={styles.fullScreenGradient}
-    >
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Navigation Header */}
-        <View style={styles.header}>
-          <View style={styles.navContainer}>
-            <View style={styles.navContent}>
-              <View style={styles.logoContainer}>
-                <Image 
-                  source={require('../assets/images/favicon1.png')} 
-                  style={styles.logoImage}
-                />
-                <View style={styles.logoTextContainer}>
-                  <Text style={styles.logo}>YaadonKe</Text>
-                  <Text style={styles.logoAccent}>Rang</Text>
-                  <Text style={styles.byText}>by Indrasol</Text>
-                </View>
-              </View>
-              
-              <TouchableOpacity
-                style={styles.loginButton}
-                onPress={() => router.push('/login')}
-              >
-                <View style={styles.loginButtonContent}>
-                  <LogIn size={16} color="black" />
-                  <Text style={styles.loginButtonText}>Login</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#ff7e5f" />
+      <LinearGradient
+        colors={['#ff7e5f', '#feb47b']}
+        style={styles.fullScreenGradient}
+      >
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerSpacing}>
+          <Header variant="login" />
 
           {/* Mobile Stats */}
           <View style={styles.mobileStats}>
@@ -311,85 +292,26 @@ export default function LandingScreen() {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Made with <Heart size={14} color="#EF4444" /> to preserve and revive your precious memories
-          </Text>
-        </View>
+        <Footer topText="Perfect for your vintage wedding photos and family memories." />
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ff7e5f',
+  },
   fullScreenGradient: {
     flex: 1,
   },
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 50,
-  },
-  navContainer: {
-    paddingHorizontal: 20,
-  },
-  navContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: 40,
-    height: 40,
-    marginRight: 3,
-    marginLeft:0,
-    resizeMode: 'contain',
-  },
-  logoTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  logoAccent: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#b91c1c',
-  },
-  byText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 2,
-  },
-  loginButton: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  loginButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  loginButtonText: {
-    color: 'black',
-    fontWeight: '600',
-    fontSize: 14,
+  headerSpacing: {
+    paddingTop: 0,
   },
   mobileStats: {
     flexDirection: 'row',
@@ -647,15 +569,5 @@ const styles = StyleSheet.create({
     color: '#111827',
     textAlign: 'center',
   },
-  footer: {
-    padding: 20,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  footerText: {
-    fontSize: 16,
-    color: '#111827',
-    textAlign: 'center',
-  },
+  
 });
