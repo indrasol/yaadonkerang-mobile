@@ -1,9 +1,11 @@
 // screens/ImageComparisonScreen.tsx
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert, Platform, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert, Platform, ScrollView, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as WebBrowser from 'expo-web-browser';
@@ -60,9 +62,13 @@ export default function ImageComparisonScreen() {
 
 
   return (
-    <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.page}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Header />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#FF6B35" />
+      <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.page}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerWrapper}>
+          <Header variant="logout" />
+        </View>
 
         {/* Main Content */}
         <View style={styles.content}>
@@ -102,24 +108,34 @@ export default function ImageComparisonScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        <Footer topText="Your precious memories, beautifully restored." />
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FF6B35',
+  },
   page: { flex: 1 },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingBottom: 40,
+    paddingBottom: 20,
+  },
+  headerWrapper: {
+    width: '100%',
+    alignSelf: 'stretch',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
+    paddingBottom: 30,
   },
   title: {
     fontSize: 24,

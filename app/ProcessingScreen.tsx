@@ -1,9 +1,11 @@
 // screens/ProcessingScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Image, StyleSheet, Alert, TouchableOpacity, Share } from 'react-native';
+import { View, Text, ActivityIndicator, Image, StyleSheet, Alert, TouchableOpacity, Share, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { ColorizationAPI } from '@/services/colorizationApiV1';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -66,16 +68,22 @@ export default function ProcessingScreen() {
 
   if (error) {
     return (
-      <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.page}>
-        <Header />
-        <View style={styles.container}>
-          <Text style={styles.errorTitle}>Processing Error</Text>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-            <Text style={styles.buttonText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor="#FF6B35" />
+        <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.page}>
+          <View style={styles.headerWrapper}>
+            <Header variant="logout" />
+          </View>
+          <View style={styles.container}>
+            <Text style={styles.errorTitle}>Processing Error</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+              <Text style={styles.buttonText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+          <Footer />
+        </LinearGradient>
+      </SafeAreaView>
     );
   }
 
@@ -89,27 +97,34 @@ export default function ProcessingScreen() {
   if (resultImage) {
     // Show loading state while navigation happens
     return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor="#f97316" />
+        <LinearGradient
+          colors={["#f97316", "#fb923c"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradient}
+        >
+          <View style={styles.centerStack}>
+            <Text style={styles.loadingTitle}>Redirecting to Results...</Text>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#f97316" />
       <LinearGradient
         colors={["#f97316", "#fb923c"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        <View style={styles.centerStack}>
-          <Text style={styles.loadingTitle}>Redirecting to Results...</Text>
+        <View style={styles.headerWrapper}>
+          <Header variant="logout" />
         </View>
-      </LinearGradient>
-    );
-  }
-
-  return (
-    <LinearGradient
-      colors={["#f97316", "#fb923c"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.gradient}
-    >
-      <Header />
       <View style={styles.centerStack}>
         <View style={styles.loaderRing}>
           <ActivityIndicator size="large" color="#FFFFFF" />
@@ -131,16 +146,25 @@ export default function ProcessingScreen() {
           <Text style={styles.progressLabel}>{progress}% complete</Text>
         </View>
       </View>
+      <Footer />
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f97316',
+  },
   page: {
     flex: 1,
   },
   gradient: {
     flex: 1,
+  },
+  headerWrapper: {
+    width: '100%',
   },
   centerStack: {
     width: '100%',
