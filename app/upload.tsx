@@ -8,11 +8,14 @@ import {
   Image,
   Alert,
   ScrollView,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Heart, Users } from "lucide-react-native";
 import { StatsAPI, StatsResponse } from "@/services/statsApi";
 // import { ColorizationAPI } from "@/services/colorizationApi";
@@ -124,14 +127,18 @@ export default function UploadScreen() {
   
 
   return (
-    <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor="#FF6B35" />
+      <LinearGradient colors={["#FF6B35", "#F7931E"]} style={styles.container}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {
           // Main upload UI (progress-only flow)
         }
         
           <>
-            <Header />
+            <View style={styles.headerWrapper}>
+              <Header variant="logout" />
+            </View>
 
             {/* Subtitle */}
             <Text style={styles.subtitle}>
@@ -200,43 +207,57 @@ export default function UploadScreen() {
                   </TouchableOpacity>
                 )}
               </View>
-              {/* Footer */}
-              <Text style={styles.footerTop}>
-                Perfect for your vintage wedding photos and family memories.
-              </Text>
-              <View style={styles.footerDivider} />
-              <Text style={styles.footerBottom}>
-                Made with <Heart size={14} color="#EF4444" /> to preserve and
-                revive your precious memories
-              </Text>
             </View>
           </>
-        
+          <Footer topText="Perfect for your vintage wedding photos and family memories." />
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 // Styles remain the same as before
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FF6B35',
+  },
   container: { flex: 1 },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "flex-start",
-    alignItems: "center",
-    padding: 20,
+    paddingTop: 0,
+    paddingBottom: 20,
   },
-  subtitle: { fontSize: 16, color: "black", textAlign: "center", marginBottom: 20, lineHeight: 22 },
-  mobileStats: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingHorizontal: 20, paddingBottom: 30, gap: 30 },
+  headerWrapper: {
+    width: '100%',
+  },
+  subtitle: { fontSize: 16, color: "black", textAlign: "center", marginBottom: 20, lineHeight: 22, paddingHorizontal: 20, alignSelf: "center" },
+  mobileStats: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingHorizontal: 20, paddingBottom: 30, gap: 30, alignSelf: "center" },
   statItem: { alignItems: "center" },
   statHeader: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
   statNumber: { fontSize: 24, fontWeight: "bold", color: "black", marginBottom: 4 },
   statText: { fontSize: 12, color: "black", fontWeight: "500", textAlign: "center" },
   statDivider: { width: 1, height: 40, backgroundColor: "white" },
-  centerSection: { flex: 1, justifyContent: "center", alignItems: "center", width: "100%" },
+  centerSection: { flex: 1, justifyContent: "center", alignItems: "center", width: "100%", paddingHorizontal: 20, alignSelf: "stretch" },
   uploadBox: { borderWidth: 2, borderColor: "#fff", borderStyle: "dashed", borderRadius: 20, padding: 30, alignItems: "center", width: "100%", maxWidth: 400, marginBottom: 20, backgroundColor: "rgba(255,255,255,0.1)" },
-  uploadCircle: { width: 60, height: 60, borderRadius: 30, borderColor:"white", backgroundColor: "#feb47b", justifyContent: "center", alignItems: "center", marginBottom: 15 },
-  logoImage1: { width: 60, height: 60, marginRight: 8 },
+  uploadCircle: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    borderWidth: 3,
+    borderColor: "white", 
+    backgroundColor: "white", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoImage1: { width: 50, height: 50 },
   uploadTitle: { fontSize: 18, fontWeight: "600", color: "#000", marginBottom: 6 },
   uploadSubtitle: { fontSize: 14, color: "#333", marginBottom: 6 },
   uploadFormats: { fontSize: 12, color: "#666", textAlign: "center", marginBottom: 15 },
