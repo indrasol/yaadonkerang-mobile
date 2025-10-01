@@ -10,11 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.yaadonkerang",
+      "bundleIdentifier": "com.indrasol.yaadonkerang",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.yourcompany.yaadonkerang",
+      "package": "com.indrasol.yaadonkerang",
       "versionCode": 1
     },
     "web": {
@@ -36,6 +36,6 @@
         "projectId": "aa0044c9-7584-4f5e-85f4-6fa815614b6c"
       }
     },
-    "owner": "chandra_p"
+    "owner": "gopiuppu"
   }
 }
