@@ -10,11 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.yaadonkerang",
+      "bundleIdentifier": "com.indrasol.yaadonkerang",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.yourcompany.yaadonkerang",
+      "package": "com.indrasol.yaadonkerang",
       "versionCode": 1
     },
     "web": {
@@ -33,9 +33,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "aa0044c9-7584-4f5e-85f4-6fa815614b6c"
+        "projectId": "b1691682-e9c2-41c8-868a-b72f2d818652"
       }
     },
-    "owner": "chandra_p"
+    "owner": "chandrap-i"
   }
 }
