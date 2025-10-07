@@ -1,6 +1,6 @@
 // screens/ImageComparisonScreen.tsx
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert, Platform, ScrollView, StatusBar } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert, Platform, ScrollView, StatusBar, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +14,8 @@ export default function ImageComparisonScreen() {
   const { original, colorized } = useLocalSearchParams<{ original: string; colorized: string }>();
   const router = useRouter();
   const [showComparison, setShowComparison] = useState(true);
+  const [isOriginalLoading, setIsOriginalLoading] = useState(true);
+  const [isColorizedLoading, setIsColorizedLoading] = useState(true);
   const handleShare = async () => {
     try {
       await Share.share({
@@ -78,12 +80,40 @@ export default function ImageComparisonScreen() {
             {showComparison && (
               <View style={styles.imageBlock}>
                 <Text style={styles.badge}>Original</Text>
-                <Image source={{ uri: String(original) }} style={styles.compareImage} resizeMode="cover" />
+                <View style={styles.imageContainer}>
+                  {isOriginalLoading && (
+                    <View style={styles.imageLoadingOverlay}>
+                      <ActivityIndicator size="large" color="#FF6B35" />
+                    </View>
+                  )}
+                  <Image 
+                    source={{ uri: String(original) }} 
+                    style={styles.compareImage} 
+                    resizeMode="cover"
+                    onLoadStart={() => setIsOriginalLoading(true)}
+                    onLoad={() => setIsOriginalLoading(false)}
+                    onError={() => setIsOriginalLoading(false)}
+                  />
+                </View>
               </View>
             )}
             <View style={styles.imageBlock}>
               <Text style={[styles.badge, styles.badgeAlt]}>Colorized</Text>
-              <Image source={{ uri: String(colorized) }} style={styles.compareImage} resizeMode="cover" />
+              <View style={styles.imageContainer}>
+                {isColorizedLoading && (
+                  <View style={styles.imageLoadingOverlay}>
+                    <ActivityIndicator size="large" color="#FF6B35" />
+                  </View>
+                )}
+                <Image 
+                  source={{ uri: String(colorized) }} 
+                  style={styles.compareImage} 
+                  resizeMode="cover"
+                  onLoadStart={() => setIsColorizedLoading(true)}
+                  onLoad={() => setIsColorizedLoading(false)}
+                  onError={() => setIsColorizedLoading(false)}
+                />
+              </View>
             </View>
           </View>
 
@@ -168,6 +198,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   badgeAlt: { backgroundColor: '#F59E0B' },
+  imageContainer: {
+    width: '100%',
+    height: 220,
+    position: 'relative',
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#f3f4f6',
+  },
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    zIndex: 1,
+  },
   compareImage: {
     width: '100%',
     height: 220,
