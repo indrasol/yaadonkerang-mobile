@@ -1,47 +1,32 @@
 {
   "cli": {
-    "version": ">= 12.0.0"
+    "version": ">= 16.19.3",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": {
-        "simulator": true
-      },
-      "android": {
-        "buildType": "apk"
-      }
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "buildConfiguration": "Release"
-      },
-      "android": {
-        "buildType": "apk"
-      }
+      "channel": "preview",
+      "autoIncrement": true
     },
     "production": {
+      "autoIncrement": true,
+      "channel": "production"
+    },
+    "development-simulator": {
+      "distribution": "internal",
+      "developmentClient": true,
       "ios": {
-        "buildConfiguration": "Release"
-      },
-      "android": {
-        "buildType": "app-bundle"
+        "simulator": true
       }
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-asc-app-id",
-        "appleTeamId": "your-apple-team-id"
-      },
-      "android": {
-        "serviceAccountKeyPath": "./path-to-service-account-key.json",
-        "track": "internal"
-      }
-    }
+    "production": {}
   }
 }
