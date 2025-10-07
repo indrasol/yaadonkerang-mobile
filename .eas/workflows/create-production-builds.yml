@@ -7,24 +7,7 @@ on:
 jobs:
   fingerprint:
     name: Fingerprint
-    type: custom
-    steps:
-      - name: Install additional tools
-        run: |
-          sudo apt-get update -y && sudo apt-get install -y jq
-
-      - name: Install expo-updates CLI
-        run: npm install -D expo-updates@latest
-
-      - name: Generate Fingerprints and save to env
-        run: |
-          ANDROID_FINGERPRINT=$(npx expo-updates fingerprint:generate --platform android)
-          ANDROID_FINGERPRINT_HASH=$(echo "$ANDROID_FINGERPRINT" | jq -r '.hash')
-          echo "ANDROID_FINGERPRINT_HASH=$ANDROID_FINGERPRINT_HASH" >> $EAS_BUILD_ENV
-
-          IOS_FINGERPRINT=$(npx expo-updates fingerprint:generate --platform ios)
-          IOS_FINGERPRINT_HASH=$(echo "$IOS_FINGERPRINT" | jq -r '.hash')
-          echo "IOS_FINGERPRINT_HASH=$IOS_FINGERPRINT_HASH" >> $EAS_BUILD_ENV
+    type: fingerprint
   get_android_build:
     name: Check for existing android build
     needs: [fingerprint]

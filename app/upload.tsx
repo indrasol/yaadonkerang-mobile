@@ -18,9 +18,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Heart, Users } from "lucide-react-native";
 import { StatsAPI, StatsResponse } from "@/services/statsApi";
-// import { ColorizationAPI } from "@/services/colorizationApi";
-import { getErrorMessage, logError } from '@/utils/errorHandler';
-import { ColorizationAPI } from "@/services/colorizationApiV1";
 
 export default function UploadScreen() {
   const router = useRouter();
@@ -71,58 +68,20 @@ export default function UploadScreen() {
     }
   };
 
-  const handleProceed = async () => {
+  const handleProceed = () => {
     if (!selectedImage) {
       Alert.alert('No image selected', 'Please select an image before proceeding.');
       return;
     }
 
-    try {
-      // Extract file extension and mime type
-      let fileType = 'image/jpeg';
-      let fileName = `photo_${Date.now()}.jpg`;
-      const match = selectedImage.match(/\.([a-zA-Z0-9]+)$/);
-      if (match && match[1]) {
-        const ext = match[1].toLowerCase();
-        fileName = `photo_${Date.now()}.${ext}`;
-        if (ext === 'png') fileType = 'image/png';
-        else if (ext === 'jpg' || ext === 'jpeg') fileType = 'image/jpeg';
-        else if (ext === 'gif') fileType = 'image/gif';
-        else if (ext === 'webp') fileType = 'image/webp';
-        else if (ext === 'bmp') fileType = 'image/bmp';
-        else if (ext === 'tiff' || ext === 'tif') fileType = 'image/tiff';
-        else if (ext === 'svg') fileType = 'image/svg+xml';
-      }
-
-      // React Native FormData file object
-      const file = {
-        uri: selectedImage,
-        name: fileName,
-        type: fileType,
-      };
-
-      // Start background job and get request id
-      const uploadResp = await ColorizationAPI.uploadImage(file as any);
-      if (!uploadResp?.request_id) {
-        Alert.alert('Upload Failed', 'Could not start colorization process.');
-        return;
-      }
-
-      // Navigate to processing screen with the request id and original URL (if available)
-      router.push({ pathname: '/ProcessingScreen', params: { requestId: uploadResp.request_id, originalUrl: uploadResp.original_url || selectedImage } });
-    } catch (error) {
-      console.error('Upload error:', error);
-      let errorMessage = 'Unknown error occurred';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      Alert.alert(
-        'Upload Failed',
-        `Please check your internet connection and try again. Error: ${errorMessage}`
-      );
-    }
+    // Immediately navigate to ProcessingScreen with the image data
+    // ProcessingScreen will handle the upload and show status updates
+    router.push({ 
+      pathname: '/ProcessingScreen', 
+      params: { 
+        imageUri: selectedImage
+      } 
+    });
   };
   
 
